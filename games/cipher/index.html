@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MONAFUKU Cipher | Love Idol Agency</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Bebas+Neue&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="background-glow bg-1"></div>
+  <div class="background-glow bg-2"></div>
+  <div class="background-grid"></div>
+
+  <header class="container hero">
+    <a class="back-link" href="../../index.html">Back to Platform</a>
+    <p class="brand-tag">LOVE IDOL AGENCY</p>
+    <h1>MONAFUKU CIPHER</h1>
+    <p class="hero-subtitle">
+      Solve five clue levels. Their answers become the key to unlock the final secret.
+    </p>
+  </header>
+
+  <main class="container">
+    <section id="phaseOne" class="phase-section">
+      <div class="section-heading">
+        <h2>Phase 1: Discovery</h2>
+        <p>Clear each level in order to activate the cipher engine.</p>
+      </div>
+      <div id="levels" class="levels-grid"></div>
+    </section>
+
+    <section id="phaseTwo" class="phase-section phase-two hidden">
+      <div class="section-heading">
+        <h2>Phase 2: Hidden Message</h2>
+        <p>Use the clues and enter the encoded text you discovered.</p>
+      </div>
+
+      <div class="cipher-engine">
+        <div class="engine-block single-block">
+          <h3>Hidden Message Terminal</h3>
+          <p class="result-title">Clues</p>
+          <ul class="clue-list">
+            <li>Use the final number from Phase 1 as your master key modifier.</li>
+            <li>Apply Caesar logic with the correct shift derived from that key.</li>
+            <li>The decoded message is a short sentence about a place opening.</li>
+          </ul>
+          <label for="encodedInput">Encoded Text</label>
+          <input id="encodedInput" type="text" placeholder="Enter encoded text" autocomplete="off" />
+          <button id="decodeBtn" class="primary-btn" type="button">Verify Hidden Message</button>
+          <p id="attemptFeedback" class="attempt-feedback">-</p>
+          <div id="successPanel" class="hidden">
+            <p class="result-title">Hidden Message</p>
+            <p id="finalResult" class="result-final">-</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="container footer">
+    <p>(c) 2026 Love Idol Agency. MONAFUKU Cipher build.</p>
+  </footer>
+
+  <div id="hintPopup" class="hint-popup" aria-live="polite" aria-hidden="true">
+    <div class="hint-popup-inner">
+      <img src="assets/hint-guide.png" alt="Hint guide character in purple hood" />
+      <div class="hint-dialogue">
+        <p class="hint-dialogue-name">Mysterious Guide</p>
+        <p id="hintDialogueText" class="hint-dialogue-text"></p>
+      </div>
+      <button id="hintCloseBtn" class="hint-close-btn" type="button" aria-label="Close hint">Close</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
