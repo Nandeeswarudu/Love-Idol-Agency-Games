@@ -1,32 +1,32 @@
 const levelsData = [
   {
     id: 1,
-    clue: "I'm the beginning",
-    hint: "You're looking at me",
-    answer: "URL",
+    clue: "The very first key is where your journey began.",
+    hint: "Use the full domain shown in your browser for this project. No https:// and no extra slash.",
+    answer: "love-idol-agency-games.vercel.app",
   },
   {
     id: 2,
-    clue: "Soft and bubbly",
-    hint: "Something to have in a hot summer",
+    clue: "In summer heat, this fizzy companion comes in a can with a hiss.",
+    hint: "A four-letter sparkling drink.",
     answer: "SODA",
   },
   {
     id: 3,
-    clue: "Companions are good to have",
-    hint: "Companion",
+    clue: "A trusted companion stands by your side. Speak her name.",
+    hint: "It is a five-letter name: R _ _ _ _.",
     answer: "RIKKA",
   },
   {
     id: 4,
-    clue: "Not all are equal",
-    hint: "Some stand above the rest",
+    clue: "Not every drop has equal value. What tier rises above common?",
+    hint: "A four-letter rarity rank often seen in games and collectibles.",
     answer: "RARE",
   },
   {
     id: 5,
-    clue: "I'm the end",
-    hint: "The last digit",
+    clue: "The final lock is a number. Enter the complete master key value.",
+    hint: "It is four digits and ends with 00. This number powers the final shift.",
     answer: "1500",
   },
 ];
