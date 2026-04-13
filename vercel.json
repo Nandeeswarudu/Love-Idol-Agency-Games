@@ -1,0 +1,26 @@
+{
+  "cleanUrls": true,
+  "trailingSlash": true,
+  "redirects": [
+    {
+      "source": "/games/cipher",
+      "destination": "/cipher",
+      "permanent": true
+    },
+    {
+      "source": "/games/cipher/:path*",
+      "destination": "/cipher/:path*",
+      "permanent": true
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/cipher",
+      "destination": "/games/cipher/index.html"
+    },
+    {
+      "source": "/cipher/:path*",
+      "destination": "/games/cipher/:path*"
+    }
+  ]
+}

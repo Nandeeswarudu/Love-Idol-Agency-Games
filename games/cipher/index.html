@@ -10,51 +10,48 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <div class="background-art"></div>
   <div class="background-glow bg-1"></div>
   <div class="background-glow bg-2"></div>
   <div class="background-grid"></div>
 
   <header class="container hero">
-    <a class="back-link" href="../../index.html">Back to Platform</a>
+    <a class="back-link" href="/">Back to Platform</a>
     <p class="brand-tag">LOVE IDOL AGENCY</p>
     <h1>MONAFUKU CIPHER</h1>
     <p class="hero-subtitle">
-      Solve five clue levels. Their answers become the key to unlock the final secret.
+      Decode five sealed prompts. Each solved key unlocks the final transmission.
     </p>
   </header>
 
   <main class="container">
     <section id="phaseOne" class="phase-section">
       <div class="section-heading">
-        <h2>Phase 1: Discovery</h2>
-        <p>Clear each level in order to activate the cipher engine.</p>
+        <h2>Phase 1: Key Retrieval</h2>
+        <p>Recover each key fragment in sequence to activate the hidden terminal.</p>
       </div>
       <div id="levels" class="levels-grid"></div>
     </section>
 
     <section id="phaseTwo" class="phase-section phase-two hidden">
       <div class="section-heading">
-        <h2>Phase 2: Hidden Message</h2>
-        <p>Use the clues and enter the encoded text you discovered.</p>
+        <h2>Phase 2: Hidden Transmission</h2>
+        <p>Inject the encoded string and verify the recovered message.</p>
       </div>
 
       <div class="cipher-engine">
         <div class="engine-block single-block">
-          <h3>Hidden Message Terminal</h3>
+          <h3>Decryption Terminal</h3>
           <p class="result-title">Clues</p>
           <ul class="clue-list">
             <li>Use the final number from Phase 1 as your master key modifier.</li>
             <li>Apply Caesar logic with the correct shift derived from that key.</li>
             <li>The decoded message is a short sentence about a place opening.</li>
           </ul>
-          <label for="encodedInput">Encoded Text</label>
-          <input id="encodedInput" type="text" placeholder="Enter encoded text" autocomplete="off" />
-          <button id="decodeBtn" class="primary-btn" type="button">Verify Hidden Message</button>
+          <label for="encodedInput">Encoded String</label>
+          <input id="encodedInput" type="text" placeholder="Enter encrypted sequence" autocomplete="off" />
+          <button id="decodeBtn" class="primary-btn" type="button">Run Verification</button>
           <p id="attemptFeedback" class="attempt-feedback">-</p>
-          <div id="successPanel" class="hidden">
-            <p class="result-title">Hidden Message</p>
-            <p id="finalResult" class="result-final">-</p>
-          </div>
         </div>
       </div>
     </section>
@@ -72,6 +69,14 @@
         <p id="hintDialogueText" class="hint-dialogue-text"></p>
       </div>
       <button id="hintCloseBtn" class="hint-close-btn" type="button" aria-label="Close hint">Close</button>
+    </div>
+  </div>
+
+  <div id="successPopup" class="success-popup" aria-live="polite" aria-hidden="true">
+    <div class="success-popup-panel">
+      <p class="success-badge">Message Unlocked</p>
+      <h3>Congratulations</h3>
+      <p id="successMessageText" class="success-message-text"></p>
     </div>
   </div>
 

@@ -1,3 +1,9 @@
+if ((window.location.protocol === "http:" || window.location.protocol === "https:")
+  && window.location.pathname.endsWith("/index.html")) {
+  const cleanedPath = window.location.pathname.replace(/index\.html$/, "");
+  window.history.replaceState({}, "", `${cleanedPath}${window.location.search}${window.location.hash}`);
+}
+
 const levelsData = [
   {
     id: 1,
@@ -13,8 +19,8 @@ const levelsData = [
   },
   {
     id: 3,
-    clue: "A trusted companion stands by your side. Speak her name.",
-    hint: "It is a five-letter name: R _ _ _ _.",
+    clue: "A funny and trusted companion dances on her shoulder.",
+    hint: "This companion is tied to Guns & Roses lore. It is a five-letter name: R _ _ _ _.",
     answer: "RIKKA",
   },
   {
@@ -25,7 +31,7 @@ const levelsData = [
   },
   {
     id: 5,
-    clue: "The final lock is a number. Enter the complete master key value.",
+    clue: "The final lock is a number and is the last digit.",
     hint: "It is four digits and ends with 00. This number powers the final shift.",
     answer: "1500",
   },
@@ -37,11 +43,11 @@ const phaseTwo = document.getElementById("phaseTwo");
 const encodedInput = document.getElementById("encodedInput");
 const decodeBtn = document.getElementById("decodeBtn");
 const attemptFeedback = document.getElementById("attemptFeedback");
-const successPanel = document.getElementById("successPanel");
-const finalResult = document.getElementById("finalResult");
 const hintPopup = document.getElementById("hintPopup");
 const hintDialogueText = document.getElementById("hintDialogueText");
 const hintCloseBtn = document.getElementById("hintCloseBtn");
+const successPopup = document.getElementById("successPopup");
+const successMessageText = document.getElementById("successMessageText");
 
 const solvedAnswers = {};
 let unlockedLevel = 1;
@@ -79,8 +85,19 @@ function closeHintPopup() {
   hintPopup.setAttribute("aria-hidden", "true");
   const hintToggle = document.querySelector(".hint-toggle-btn");
   if (hintToggle) {
-    hintToggle.textContent = "Show Hint";
+    hintToggle.textContent = "Invoke Hint";
   }
+}
+
+function closeSuccessPopup() {
+  successPopup.classList.remove("show");
+  successPopup.setAttribute("aria-hidden", "true");
+}
+
+function openSuccessPopup(message) {
+  successMessageText.textContent = message;
+  successPopup.classList.add("show");
+  successPopup.setAttribute("aria-hidden", "false");
 }
 
 function openHintPopup(level) {
@@ -121,6 +138,7 @@ function updatePhaseTwo() {
   }
 
   closeHintPopup();
+  closeSuccessPopup();
   phaseOne.classList.add("hidden");
   phaseTwo.classList.remove("hidden");
   encodedInput.focus();
@@ -140,18 +158,18 @@ function renderLevels() {
   card.className = "level-card";
 
   card.innerHTML = `
-    <p class="progress-line">Progress: Level ${level.id} of ${levelsData.length}</p>
+    <p class="progress-line">Cipher Sequence: ${level.id} / ${levelsData.length}</p>
     <div class="level-head">
-      <h3>Level ${level.id}</h3>
+      <h3>Node ${level.id}</h3>
       <span class="pill active">Active</span>
     </div>
-    <p class="question-line"><strong>Question:</strong> ${level.clue}</p>
+    <p class="question-line"><strong>Prompt:</strong> ${level.clue}</p>
     <div class="answer-row">
-      <input class="answer-input" id="answer-${level.id}" type="text" placeholder="Enter answer" autocomplete="off" />
-      <button class="check-btn" id="check-${level.id}" type="button">Check</button>
+      <input class="answer-input" id="answer-${level.id}" type="text" placeholder="Enter key fragment..." autocomplete="off" />
+      <button class="check-btn" id="check-${level.id}" type="button">Decrypt</button>
     </div>
     <div class="hint-row">
-      <button class="hint-toggle-btn" id="hint-toggle-${level.id}" type="button">Show Hint</button>
+      <button class="hint-toggle-btn" id="hint-toggle-${level.id}" type="button">Invoke Hint</button>
     </div>
     <p class="feedback" id="feedback-${level.id}"></p>
   `;
@@ -189,7 +207,7 @@ function checkLevel(level) {
 
   if (attempt === normalize(level.answer)) {
     solvedAnswers[level.id] = normalize(level.answer);
-    feedback.textContent = "Correct. Level cleared.";
+    feedback.textContent = "Key fragment accepted. Node unlocked.";
     feedback.classList.add("ok");
     isTransitioning = true;
     window.setTimeout(() => {
@@ -201,7 +219,7 @@ function checkLevel(level) {
     return;
   }
 
-  feedback.textContent = "Not correct yet. Check the clue and hint, then try again.";
+  feedback.textContent = "Mismatch detected. Re-check the prompt and hint.";
   feedback.classList.remove("ok");
 }
 
@@ -212,9 +230,9 @@ function runDecryption() {
 
   const attempt = normalize(encodedInput.value);
   if (!attempt) {
-    attemptFeedback.textContent = "Enter encoded text first.";
+    attemptFeedback.textContent = "No input detected. Enter an encrypted sequence.";
     attemptFeedback.classList.remove("ok");
-    successPanel.classList.add("hidden");
+    closeSuccessPopup();
     return;
   }
 
@@ -223,23 +241,33 @@ function runDecryption() {
   const targetPlain = "THECAFEISOPEN";
 
   if (shifted === targetPlain) {
-    finalResult.textContent = "Congratulations on finding the hidden message: THE CAFE IS OPEN";
-    attemptFeedback.textContent = "Correct.";
+    const winMessage = "Congratulations on finding the hidden message: THE CAFE IS OPEN";
+    attemptFeedback.textContent = "Verification successful.";
     attemptFeedback.classList.add("ok");
-    successPanel.classList.remove("hidden");
+    openSuccessPopup(winMessage);
     return;
   }
 
-  attemptFeedback.textContent = "Wrong, try again.";
+  attemptFeedback.textContent = "Verification failed. Wrong sequence, try again.";
   attemptFeedback.classList.remove("ok");
-  successPanel.classList.add("hidden");
+  closeSuccessPopup();
 }
 
 decodeBtn.addEventListener("click", runDecryption);
 hintCloseBtn.addEventListener("click", closeHintPopup);
+successPopup.addEventListener("click", (event) => {
+  if (event.target === successPopup) {
+    closeSuccessPopup();
+  }
+});
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && hintPopup.classList.contains("show")) {
-    closeHintPopup();
+  if (event.key === "Escape") {
+    if (hintPopup.classList.contains("show")) {
+      closeHintPopup();
+    }
+    if (successPopup.classList.contains("show")) {
+      closeSuccessPopup();
+    }
   }
 });
 encodedInput.addEventListener("keydown", (event) => {
