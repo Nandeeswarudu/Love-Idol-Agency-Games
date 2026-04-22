@@ -229,6 +229,7 @@
       grid-template-rows: auto 1fr auto;
       gap: 0.8rem;
       flex: 1;
+      position: relative;
       min-height: 0;
       min-width: 0;
     }
@@ -484,6 +485,18 @@
       height: 6px;
       top: -18px;
     }
+    .entity-name-label {
+      position: absolute;
+      top: -26px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      font-weight: 700;
+      color: #fff;
+      text-shadow: 0 1px 2px #000;
+      white-space: nowrap;
+      pointer-events: none;
+    }
     .player-ammo-mini {
       position: absolute;
       top: -6px;
@@ -507,6 +520,27 @@
       color: #fff;
       border: 1px solid rgba(255, 255, 255, 0.3);
       animation: pulse 1s ease-in-out infinite;
+    }
+
+    .wave-countdown-overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 8rem;
+      font-family: 'Bebas Neue', cursive;
+      color: #ffb3a3;
+      text-shadow: 0 0 30px rgba(255, 100, 66, 0.6);
+      pointer-events: none;
+      z-index: 1000;
+      animation: countdownPulse 1s ease-out infinite;
+    }
+
+    @keyframes countdownPulse {
+      0% { transform: translate(-50%, -50%) scale(1.3); opacity: 0; }
+      20% { opacity: 1; }
+      80% { opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
     }
 
     .pickup-ammo {
@@ -699,7 +733,7 @@
         <h3>Play Options</h3>
         <div class="game-buttons">
           <button class="game-button primary" data-action="play-solo">Play Solo</button>
-          <button class="game-button primary" data-action="play-multiplayer">Play Multiplayer</button>
+          <button class="game-button primary" data-action="play-bot">Play vs Bot</button>
           <button class="game-button secondary" data-action="back-to-menu">Back</button>
           <button class="game-button secondary" data-action="quit">Quit</button>
         </div>
@@ -742,6 +776,20 @@
         <p class="game-message">Join an existing arena room to battle with other players.</p>
       </div>
 
+      <!-- BOT NAME SCREEN -->
+      <div id="botNameScreen" class="game-menu-grid game-card hidden">
+        <h3>Enter Your Name</h3>
+        <div class="field-group">
+          <label>Pilot Name
+            <input id="botPlayerNameInput" type="text" placeholder="Enter your name" />
+          </label>
+        </div>
+        <div class="game-buttons">
+          <button class="game-button primary" data-action="submit-bot-game">Enter Arena</button>
+          <button class="game-button secondary" data-action="back-to-menu">Back</button>
+        </div>
+      </div>
+
       <!-- WAITING ROOM SCREEN -->
       <div id="waitingRoomScreen" class="game-menu-grid game-card hidden">
         <h3>Waiting Room</h3>
@@ -774,6 +822,7 @@
               <div class="player-stats" id="playerStats"></div>
             </div>
             <div class="game-board" id="gameBoard"></div>
+            <div id="waveCountdownOverlay" class="wave-countdown-overlay hidden"></div>
             <div class="game-bottom-info">
               <div class="player-health">
                 <span>HP:</span>

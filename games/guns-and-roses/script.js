@@ -5,16 +5,20 @@ const enterRoomScreen = document.getElementById("enterRoomScreen");
 const waitingRoomScreen = document.getElementById("waitingRoomScreen");
 const gameScreen = document.getElementById("gameScreen");
 const endGameScreen = document.getElementById("endGameScreen");
+const botNameScreen = document.getElementById("botNameScreen");
 
 const createRoomNameInput = document.getElementById("createRoomName");
 const createRoomPasswordInput = document.getElementById("createRoomPassword");
 const enterRoomNameInput = document.getElementById("enterRoomName");
 const enterRoomPasswordInput = document.getElementById("enterRoomPassword");
+const botPlayerNameInput = document.getElementById("botPlayerNameInput");
 
 const gameBoard = document.getElementById("gameBoard");
 const waveCounter = document.getElementById("waveCounter");
 const playerStats = document.getElementById("playerStats");
 const leaderboardList = document.getElementById("leaderboardList");
+const gameLeaderboardSidebar = document.getElementById("gameleaderboard");
+const waveCountdownOverlay = document.getElementById("waveCountdownOverlay");
 const healthFill = document.getElementById("healthFill");
 const healthText = document.getElementById("healthText");
 const weaponDisplay = document.getElementById("weaponDisplay");
@@ -288,6 +292,7 @@ function showScreen(screen) {
   setHidden(waitingRoomScreen, screen !== "waiting");
   setHidden(gameScreen, screen !== "game");
   setHidden(endGameScreen, screen !== "endGame");
+  setHidden(botNameScreen, screen !== "botName");
 }
 
 function normalizeRoomValue(value, fallback) {
@@ -308,24 +313,9 @@ function randomInRange(min, max) {
 }
 
 function getAlivePlayers() {
-  const multiplayerAlive = (gameState?.players || []).filter(
-    (p) =>
-      p &&
-      p.alive &&
-      p.hp > 0 &&
-      Number.isFinite(p.x) &&
-      Number.isFinite(p.y)
+  return (gameState?.players || []).filter(
+    (p) => p && p.alive && p.hp > 0 && Number.isFinite(p.x) && Number.isFinite(p.y)
   );
-  if (multiplayerAlive.length > 0) return multiplayerAlive;
-  if (
-    playerData.alive &&
-    playerData.hp > 0 &&
-    Number.isFinite(playerData.x) &&
-    Number.isFinite(playerData.y)
-  ) {
-    return [playerData];
-  }
-  return [];
 }
 
 function syncLocalPlayerToGameState() {
@@ -366,13 +356,27 @@ function getNearestAlivePlayer(fromX, fromY) {
   return { player: nearest, dist: nearestDist };
 }
 
-function triggerBossDeath(now) {
+function getNearestEnemy(fromX, fromY) {
+  const enemies = gameState.enemies.filter(e => e.state !== 'dead');
+  if (gameState.boss && gameState.boss.state !== 'dead') enemies.push(gameState.boss);
+  if (enemies.length === 0) return null;
+  let nearest = enemies[0];
+  let minDist = distance(fromX, fromY, nearest.x, nearest.y);
+  enemies.forEach(e => {
+    const d = distance(fromX, fromY, e.x, e.y);
+    if (d < minDist) { minDist = d; nearest = e; }
+  });
+  return { enemy: nearest, dist: minDist };
+}
+
+function triggerBossDeath(now, killerId) {
   if (!gameState?.boss) return;
   const boss = gameState.boss;
   if (boss.state === "dead") return;
 
   boss.hp = 0;
   boss.state = "dead";
+  boss.killerId = killerId;
   boss.attackMode = null;
   boss.attackTargetId = null;
   boss.meleeHitDone = false;
@@ -388,6 +392,8 @@ function triggerBossDeath(now) {
 }
 
 function initializeGameState() {
+  // Capture current bot if we are in bot mode so it's not lost when resetting gameState
+  const currentBot = gameState?.bot;
   gameState = {
     wave: 1,
     waveStartTime: null,
@@ -395,13 +401,26 @@ function initializeGameState() {
     waveAlertShown: false,
     enemies: [],
     boss: null,
+    bot: currentBot,
     projectiles: [],
     pickups: [],
-    players: gameMode === "solo" ? [playerData] : [playerData],
+    players: [],
     gameActive: true,
     gameEnded: false,
     endGameTime: null,
+    waveCountdown: 0,
   };
+
+  // Strictly ensure players list is populated correctly for the chosen mode
+  if (gameMode === "bot" && currentBot) {
+    gameState.players = [playerData, currentBot];
+  } else {
+    gameState.players = [playerData];
+  }
+
+  const rect = gameBoard.getBoundingClientRect();
+  const boardW = rect.width || GAME_CONFIG.BOARD_WIDTH;
+  const boardH = rect.height || GAME_CONFIG.BOARD_HEIGHT;
 
   playerData.hp = playerData.maxHp;
   playerData.ammo = GAME_CONFIG.PLAYER_START_AMMO;
@@ -413,10 +432,9 @@ function initializeGameState() {
   playerData.lastMoveTime = Date.now();
   playerData.lastShootTime = 0;
   playerData.lastHurtTime = 0;
-
-  const rect = gameBoard.getBoundingClientRect();
-  playerData.x = rect.width / 2;
-  playerData.y = rect.height / 2;
+  playerData.alive = true;
+  playerData.x = boardW / 2;
+  playerData.y = boardH / 2;
 
   startWave();
 }
@@ -432,21 +450,41 @@ function startWave() {
   waveData.enemiesCleared = false;
   waveData.cleared = false;
 
-  if (DEBUG_BOSS_FIRST) {
-    waveData.started = true;
-    gameState.enemies = [];
-    spawnBoss();
-    updateGameDisplay();
-    return;
-  }
+  // VITAL: Restore game active flags so shooting and AI logic resume for the new wave
+  gameState.gameActive = true;
+  gameState.gameEnded = false;
 
-  setTimeout(() => {
-    if (!gameState.gameActive) return;
+  // Revive all players and replenish ammo at the start of every wave
+  gameState.players.forEach(p => {
+    p.hp = p.maxHp;
+    p.alive = true;
+    if (p.ammo < 50) p.ammo = 50;
+  });
 
-    waveData.started = true;
-    const enemyCount = GAME_CONFIG.INITIAL_ENEMIES + (gameState.wave - 1) * GAME_CONFIG.ENEMIES_PER_WAVE;
-    spawnEnemyWave(enemyCount);
-  }, GAME_CONFIG.WAVE_START_DELAY);
+  gameState.waveCountdown = 3;
+  
+  const countdownInterval = setInterval(() => {
+    if (!gameState || !gameState.gameActive) {
+      clearInterval(countdownInterval);
+      return;
+    }
+
+    gameState.waveCountdown--;
+
+    if (gameState.waveCountdown <= 0) {
+      clearInterval(countdownInterval);
+      
+      if (DEBUG_BOSS_FIRST) {
+        waveData.started = true;
+        gameState.enemies = [];
+        spawnBoss();
+      } else {
+        waveData.started = true;
+        const enemyCount = GAME_CONFIG.INITIAL_ENEMIES + (gameState.wave - 1) * GAME_CONFIG.ENEMIES_PER_WAVE;
+        spawnEnemyWave(enemyCount);
+      }
+    }
+  }, 1000);
 }
 
 function spawnEnemyWave(count) {
@@ -509,6 +547,10 @@ function updateGameDisplay() {
   if (!gameState) return;
 
   const rect = gameBoard.getBoundingClientRect();
+
+  if (gameLeaderboardSidebar) {
+    gameLeaderboardSidebar.classList.toggle("hidden", gameMode === "solo");
+  }
 
   gameBoard.innerHTML = "";
 
@@ -607,31 +649,56 @@ function updateGameDisplay() {
     gameBoard.appendChild(el);
   });
 
-  const playerEl = document.createElement("div");
-  playerEl.className = "game-entity player-avatar";
-  playerEl.style.left = `${Math.round(clamp(playerData.x - SPRITE_CONFIG.FRAME_WIDTH / 2, 0, rect.width - SPRITE_CONFIG.FRAME_WIDTH))}px`;
-  playerEl.style.top = `${Math.round(clamp(playerData.y - SPRITE_CONFIG.FRAME_HEIGHT / 2, 0, rect.height - SPRITE_CONFIG.FRAME_HEIGHT))}px`;
-  
-  const spritePos = getPlayerSpritePosition();
-  playerEl.style.backgroundPosition = `-${spritePos.x}px -${spritePos.y}px`;
-  playerEl.style.transform = playerData.facing === -1 ? 'scaleX(-1)' : 'scaleX(1)';
-  
-  const pHealthBar = document.createElement("div");
-  pHealthBar.className = "entity-health-bar";
-  const pHealthFill = document.createElement("div");
-  pHealthFill.className = "entity-health-fill";
-  pHealthFill.style.width = `${(playerData.hp / playerData.maxHp) * 100}%`;
-  if (playerData.facing === -1) pHealthBar.style.transform = "translateX(-50%) scaleX(-1)";
-  pHealthBar.appendChild(pHealthFill);
-  playerEl.appendChild(pHealthBar);
+  gameState.players.forEach(p => {
+    if (!p.alive && p.id !== playerData.id) return;
+    const pEl = document.createElement("div");
+    pEl.className = "game-entity player-avatar";
+    pEl.style.left = `${Math.round(clamp(p.x - SPRITE_CONFIG.FRAME_WIDTH / 2, 0, rect.width - SPRITE_CONFIG.FRAME_WIDTH))}px`;
+    pEl.style.top = `${Math.round(clamp(p.y - SPRITE_CONFIG.FRAME_HEIGHT / 2, 0, rect.height - SPRITE_CONFIG.FRAME_HEIGHT))}px`;
 
-  const pAmmo = document.createElement("div");
-  pAmmo.className = "player-ammo-mini";
-  pAmmo.textContent = playerData.ammo;
-  if (playerData.facing === -1) pAmmo.style.transform = "translateX(-50%) scaleX(-1)";
-  playerEl.appendChild(pAmmo);
+    const col = p.spriteAnimationFrame % SPRITE_CONFIG.COLS;
+    const row = p.spriteAnimationRow;
+    pEl.style.backgroundPosition = `-${Math.round(col * SPRITE_CONFIG.FRAME_WIDTH)}px -${Math.round(row * SPRITE_CONFIG.FRAME_HEIGHT)}px`;
+    pEl.style.transform = p.facing === -1 ? 'scaleX(-1)' : 'scaleX(1)';
 
-  gameBoard.appendChild(playerEl);
+    const nameLabel = document.createElement("div");
+    nameLabel.className = "entity-name-label";
+    nameLabel.textContent = p.name;
+    if (p.facing === -1) nameLabel.style.transform = "translateX(-50%) scaleX(-1)";
+    pEl.appendChild(nameLabel);
+
+    const pHealthBar = document.createElement("div");
+    pHealthBar.className = "entity-health-bar";
+    const pHealthFill = document.createElement("div");
+    pHealthFill.className = "entity-health-fill";
+    pHealthFill.style.width = `${(p.hp / p.maxHp) * 100}%`;
+    if (p.facing === -1) pHealthBar.style.transform = "translateX(-50%) scaleX(-1)";
+    pHealthBar.appendChild(pHealthFill);
+    pEl.appendChild(pHealthBar);
+
+    const pAmmo = document.createElement("div");
+    pAmmo.className = "player-ammo-mini";
+    pAmmo.textContent = p.ammo;
+    if (p.facing === -1) pAmmo.style.transform = "translateX(-50%) scaleX(-1)";
+    pEl.appendChild(pAmmo);
+
+    gameBoard.appendChild(pEl);
+  });
+
+  if (waveCountdownOverlay) {
+    if (gameState.waveCountdown > 0) {
+      if (waveCountdownOverlay.textContent !== String(gameState.waveCountdown)) {
+        waveCountdownOverlay.textContent = gameState.waveCountdown;
+        // Re-trigger the pulse animation on every number change
+        waveCountdownOverlay.style.animation = 'none';
+        waveCountdownOverlay.offsetHeight; /* trigger reflow */
+        waveCountdownOverlay.style.animation = null;
+      }
+      waveCountdownOverlay.classList.remove("hidden");
+    } else {
+      waveCountdownOverlay.classList.add("hidden");
+    }
+  }
 
   updateHUD();
   updateLeaderboard();
@@ -643,10 +710,13 @@ function updateHUD() {
   weaponDisplay.textContent = WEAPONS[playerData.weapon].name;
   ammoDisplay.textContent = playerData.ammo;
 
-  if (gameState.wave > 0 && !waveData.started) {
-    waveCounter.textContent = `Wave ${gameState.wave}`;
+  if (gameState.waveCountdown > 0) {
+    waveCounter.textContent = `Wave ${gameState.wave} - Preparing...`;
   } else if (waveData.started) {
-    waveCounter.textContent = `Wave ${gameState.wave} - ${gameState.enemies.length + (gameState.boss ? 1 : 0)} remaining`;
+    const count = gameState.enemies.length + (gameState.boss ? 1 : 0);
+    waveCounter.textContent = `Wave ${gameState.wave} - ${count} remaining`;
+  } else {
+    waveCounter.textContent = `Wave ${gameState.wave}`;
   }
 
   playerStats.textContent = gameMode === "solo" ? `Kills: ${playerData.kills}` : `${playerData.name}`;
@@ -655,8 +725,9 @@ function updateHUD() {
 function updateLeaderboard() {
   if (gameMode === "solo") return;
 
+  const players = (gameMode === "bot") ? gameState.players : leaderboardPlayers;
   leaderboardList.innerHTML = "";
-  const sortedPlayers = [...leaderboardPlayers].sort((a, b) => b.kills - a.kills);
+  const sortedPlayers = [...(players || [])].sort((a, b) => b.kills - a.kills);
 
   sortedPlayers.forEach((player, index) => {
     const entry = document.createElement("div");
@@ -680,22 +751,22 @@ function handleShoot(x, y) {
 
   if (playerData.weapon === "pistol" && playerData.ammo > 0) {
     playerData.ammo -= 1;
-    fireProjectile(playerData.x, playerData.y, x, y, true);
+    fireProjectile(playerData.x, playerData.y, x, y, true, playerData.id);
   } else if (playerData.weapon === "machinegun" && playerData.ammo > 0) {
     playerData.ammo -= 1;
-    fireProjectile(playerData.x, playerData.y, x, y, true);
+    fireProjectile(playerData.x, playerData.y, x, y, true, playerData.id);
   } else if (playerData.weapon === "flamethrower" && playerData.ammo >= 2) {
     playerData.ammo -= 2;
     for (let i = 0; i < 3; i++) {
       const vx = Math.random() - 0.5;
       const vy = Math.random() - 0.5;
       const mag = Math.sqrt(vx * vx + vy * vy);
-      fireProjectile(playerData.x, playerData.y, playerData.x + (vx / mag) * 100, playerData.y + (vy / mag) * 100, true);
+      fireProjectile(playerData.x, playerData.y, playerData.x + (vx / mag) * 100, playerData.y + (vy / mag) * 100, true, playerData.id);
     }
   }
 }
 
-function fireProjectile(fromX, fromY, toX, toY, fromPlayer) {
+function fireProjectile(fromX, fromY, toX, toY, fromPlayer, shooterId) {
   const dx = toX - fromX;
   const dy = toY - fromY;
   const dist = Math.sqrt(dx * dx + dy * dy);
@@ -709,6 +780,7 @@ function fireProjectile(fromX, fromY, toX, toY, fromPlayer) {
     vx: (dx / dist) * speed,
     vy: (dy / dist) * speed,
     fromPlayer,
+    shooterId,
     createdAt: Date.now(),
     hitTime: null,
     angle,
@@ -744,12 +816,112 @@ function updatePlayerMovement(dt) {
   }
 }
 
+function updateBotLogic(dt) {
+  if (gameMode !== "bot" || !gameState.bot || !gameState.bot.alive) return;
+  const bot = gameState.bot;
+  const now = Date.now();
+
+  const targetData = getNearestEnemy(bot.x, bot.y);
+  if (targetData) {
+    const { enemy, dist } = targetData;
+    const dx = enemy.x - bot.x;
+    const dy = enemy.y - bot.y;
+    bot.facing = dx >= 0 ? 1 : -1;
+
+    const PREFERRED_DIST = 180; // bot tries to stay ~180px away
+    const rect = gameBoard.getBoundingClientRect();
+    const boardW = rect.width || GAME_CONFIG.BOARD_WIDTH;
+    const boardH = rect.height || GAME_CONFIG.BOARD_HEIGHT;
+
+    let moveX = 0;
+    let moveY = 0;
+
+    if (dist > PREFERRED_DIST + 30) {
+      // Too far — move toward enemy
+      moveX = (dx / dist) * MOVEMENT_CONFIG.SPEED * 0.8 * dt;
+      moveY = (dy / dist) * MOVEMENT_CONFIG.SPEED * 0.8 * dt;
+    } else if (dist < PREFERRED_DIST - 30) {
+      // Too close — back away from enemy
+      moveX = -(dx / dist) * MOVEMENT_CONFIG.SPEED * 0.8 * dt;
+      moveY = -(dy / dist) * MOVEMENT_CONFIG.SPEED * 0.8 * dt;
+    } else {
+      // In preferred range — strafe perpendicular to keep moving
+      // Use a slow strafe direction that flips based on bot's ID to vary bots
+      const strafeDir = bot.id.charCodeAt(bot.id.length - 1) % 2 === 0 ? 1 : -1;
+      moveX = (-dy / dist) * MOVEMENT_CONFIG.SPEED * 0.5 * dt * strafeDir;
+      moveY = (dx / dist) * MOVEMENT_CONFIG.SPEED * 0.5 * dt * strafeDir;
+    }
+
+    bot.x = clamp(bot.x + moveX, SPRITE_CONFIG.FRAME_WIDTH / 2, boardW - SPRITE_CONFIG.FRAME_WIDTH / 2);
+    bot.y = clamp(bot.y + moveY, SPRITE_CONFIG.FRAME_HEIGHT / 2, boardH - SPRITE_CONFIG.FRAME_HEIGHT / 2);
+
+    // Always animate walk when moving
+    bot.spriteAnimationRow = SPRITE_CONFIG.SPRITE_ROWS.walk;
+    if (now - bot.lastSpriteUpdate > SPRITE_CONFIG.FRAME_RATE) {
+      bot.spriteAnimationFrame = (bot.spriteAnimationFrame + 1) % 4;
+      bot.lastSpriteUpdate = now;
+    }
+
+    if (now - bot.lastShootTime > 600 && bot.ammo > 0) {
+      bot.lastShootTime = now;
+      bot.ammo--;
+      fireProjectile(bot.x, bot.y, enemy.x, enemy.y, true, bot.id);
+    }
+  } else {
+    // No enemies — wander toward the player like a buddy would between waves
+    const rect = gameBoard.getBoundingClientRect();
+    const boardW = rect.width || GAME_CONFIG.BOARD_WIDTH;
+    const boardH = rect.height || GAME_CONFIG.BOARD_HEIGHT;
+
+    // Pick up a new wander target every 2 seconds or if none set yet
+    if (!bot.wanderTarget || now - bot.wanderTargetTime > 2000) {
+      // Wander toward the player with a small random offset so they don't stack
+      const offsetX = (Math.random() - 0.5) * 120;
+      const offsetY = (Math.random() - 0.5) * 120;
+      bot.wanderTarget = {
+        x: clamp(playerData.x + offsetX, SPRITE_CONFIG.FRAME_WIDTH / 2, boardW - SPRITE_CONFIG.FRAME_WIDTH / 2),
+        y: clamp(playerData.y + offsetY, SPRITE_CONFIG.FRAME_HEIGHT / 2, boardH - SPRITE_CONFIG.FRAME_HEIGHT / 2),
+      };
+      bot.wanderTargetTime = now;
+    }
+
+    const wx = bot.wanderTarget.x - bot.x;
+    const wy = bot.wanderTarget.y - bot.y;
+    const wDist = Math.sqrt(wx * wx + wy * wy);
+
+    if (wDist > 10) {
+      bot.facing = wx >= 0 ? 1 : -1;
+      bot.x += (wx / wDist) * MOVEMENT_CONFIG.SPEED * 0.6 * dt;
+      bot.y += (wy / wDist) * MOVEMENT_CONFIG.SPEED * 0.6 * dt;
+      bot.spriteAnimationRow = SPRITE_CONFIG.SPRITE_ROWS.walk;
+      if (now - bot.lastSpriteUpdate > SPRITE_CONFIG.FRAME_RATE) {
+        bot.spriteAnimationFrame = (bot.spriteAnimationFrame + 1) % 4;
+        bot.lastSpriteUpdate = now;
+      }
+    } else {
+      // Reached wander point — pick a new one next tick
+      bot.wanderTarget = null;
+      bot.spriteAnimationRow = SPRITE_CONFIG.SPRITE_ROWS.walk;
+      bot.spriteAnimationFrame = 0;
+    }
+  }
+
+  gameState.pickups = gameState.pickups.filter((pickup) => {
+    if (distance(bot.x, bot.y, pickup.x, pickup.y) < 30) {
+      if (pickup.type === "ammo") bot.ammo += 15;
+      return false;
+    }
+    return true;
+  });
+}
+
 function updateGameLogic(dt) {
   if (!gameState || !gameState.gameActive) return;
 
   const now = Date.now();
 
   updatePlayerMovement(dt);
+  updateBotLogic(dt);
   syncLocalPlayerToGameState();
 
   if (playerData.alive && playerData.hp > 0) {
@@ -828,7 +1000,7 @@ function updateGameLogic(dt) {
       enemy.facing = dx >= 0 ? 1 : -1;
       const speed = AI_CONFIG.ENEMY_MOVE_SPEED;
 
-      if (dist > 5) {
+      if (dist > 5 && enemy.state !== "dead") {
         enemy.x += (dx / dist) * speed * dt;
         enemy.y += (dy / dist) * speed * dt;
       }
@@ -865,12 +1037,14 @@ function updateGameLogic(dt) {
       ) {
         boss.deathHandled = true;
         gameState.boss = null;
-        playerData.kills += (2 + Math.max(0, gameState.wave - 5));
+        
+        const killer = gameState.players.find(p => p.id === boss.killerId);
+        if (killer) killer.kills += (1 + gameState.wave);
+
         if (gameState.wave === GAME_CONFIG.MAX_WAVES) {
           endGame();
         } else {
           waveData.cleared = true;
-          playerData.hp = playerData.maxHp;
           setTimeout(() => {
             gameState.wave += 1;
             startWave();
@@ -879,7 +1053,7 @@ function updateGameLogic(dt) {
       }
     } else {
       if (boss.hp <= 0) {
-        triggerBossDeath(now);
+        triggerBossDeath(now, null);
       }
 
       if (boss.state === "dead") {
@@ -899,14 +1073,12 @@ function updateGameLogic(dt) {
               const meleeTargetData = getNearestAlivePlayer(boss.x, boss.y);
               if (meleeTargetData && meleeTargetData.dist <= AI_CONFIG.BOSS_MELEE_RANGE + 20) {
                 const meleeTarget = meleeTargetData.player;
-                if (meleeTarget.id === playerData.id) {
-                  playerData.hp = Math.max(0, playerData.hp - 2);
-                  playerData.lastHurtTime = now;
-                  if (playerData.hp <= 0) {
-                    playerData.alive = false;
-                    if (gameMode === "solo") {
-                      endGame();
-                    }
+              meleeTarget.hp = Math.max(0, meleeTarget.hp - 2);
+              meleeTarget.lastHurtTime = now;
+              if (meleeTarget.hp <= 0) {
+                meleeTarget.alive = false;
+                if (gameMode === "solo" && meleeTarget.id === playerData.id) {
+                  endGame();
                   }
                 }
               }
@@ -999,6 +1171,10 @@ function updateGameLogic(dt) {
             enemy.spriteAnimationFrame = 0;
             enemy.lastSpriteUpdate = now;
             enemy.deathTime = now;
+            
+            const shooter = gameState.players.find(p => p.id === proj.shooterId);
+            if (shooter) shooter.kills += 1;
+
             gameState.pickups.push({
               type: "ammo",
               x: enemy.x,
@@ -1017,7 +1193,7 @@ function updateGameLogic(dt) {
       if (!proj.hitTime && gameState.boss && gameState.boss.state !== "dead" && distance(proj.x, proj.y, gameState.boss.x, gameState.boss.y) < 40) {
         gameState.boss.hp -= 1;
         if (gameState.boss.hp <= 0) {
-          triggerBossDeath(now);
+          triggerBossDeath(now, proj.shooterId);
         }
         proj.frame = 3; // Set to frame 4 (hit frame)
         proj.vx = 0;
@@ -1025,20 +1201,20 @@ function updateGameLogic(dt) {
         proj.hitTime = proj.hitTime || Date.now();
       }
     } else {
-      if (distance(proj.x, proj.y, playerData.x, playerData.y) < 20 && playerData.alive) {
-        playerData.hp -= 1;
-        playerData.lastHurtTime = Date.now();
-        proj.vx = 0;
-        proj.vy = 0;
-        proj.hitTime = proj.hitTime || Date.now();
-
-        if (playerData.hp <= 0) {
-          playerData.alive = false;
-          if (gameMode === "solo") {
-            endGame();
+      gameState.players.forEach(p => {
+        if (p.alive && distance(proj.x, proj.y, p.x, p.y) < 20) {
+          p.hp -= 1;
+          p.lastHurtTime = now;
+          proj.vx = 0; proj.vy = 0;
+          proj.hitTime = proj.hitTime || now;
+          if (p.hp <= 0) {
+            p.alive = false;
+            if (gameMode === "solo" && p.id === playerData.id) {
+              endGame();
+            }
           }
         }
-      }
+      });
     }
 
     const hitAlive = proj.hitTime && Date.now() - proj.hitTime < 120;
@@ -1165,6 +1341,37 @@ function joinMultisynqSession(sessionId, password, playerName) {
     });
 }
 
+function startBotGame() {
+  const name = (botPlayerNameInput && botPlayerNameInput.value.trim()) || "Monafuku";
+  gameMode = "bot";
+  playerData.name = name;
+  playerData.alive = true;
+  playerData.kills = 0;
+  playerData.hp = GAME_CONFIG.PLAYER_START_HP;
+  playerData.ammo = GAME_CONFIG.PLAYER_START_AMMO;
+
+  const botNames = ["Monafuku-Bot", "Iron-Idol", "Cyber-Roses", "Tactical-Rose"];
+  const botName = botNames[Math.floor(Math.random() * botNames.length)];
+
+  const bot = {
+    id: "bot-" + Date.now(),
+    name: botName,
+    hp: GAME_CONFIG.PLAYER_START_HP * 2, // Give bot more HP for testing
+    maxHp: GAME_CONFIG.PLAYER_START_HP * 2,
+    x: 200, y: 200, kills: 0,
+    weapon: "pistol", ammo: 100, alive: true,
+    spriteAnimationFrame: 0, spriteAnimationRow: 0,
+    lastShootTime: 0, lastSpriteUpdate: 0, facing: 1, lastMoveTime: Date.now()
+  };
+
+  gameState = { bot: bot }; // Pre-set bot so initializeGameState can pick it up
+  showScreen("game");
+  initializeGameState();
+  
+  lastFrameTime = 0;
+  gameLoop();
+}
+
 function handleAction(action) {
   switch (action) {
     case "play":
@@ -1173,8 +1380,11 @@ function handleAction(action) {
     case "play-solo":
       startSoloGame();
       break;
-    case "play-multiplayer":
-      showScreen("createRoom");
+    case "play-bot":
+      showScreen("botName");
+      break;
+    case "submit-bot-game":
+      startBotGame();
       break;
     case "create-room":
       showScreen("createRoom");
