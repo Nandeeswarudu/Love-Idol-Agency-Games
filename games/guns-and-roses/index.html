@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guns & Roses | Love Idol Agency</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Bebas+Neue&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../../styles.css" />
+  <style>
+    body {
+      background: radial-gradient(circle at 25% 15%, rgba(255, 100, 66, 0.14), transparent 0%),
+        radial-gradient(circle at 80% 20%, rgba(255, 102, 102, 0.08), transparent 25%),
+        linear-gradient(180deg, #050507 0%, #040305 56%, #030204 100%);
+      color: #e9e5dd;
+    }
+
+    .background-grid {
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        radial-gradient(circle at 70% 18%, rgba(255, 150, 85, 0.06), transparent 14%);
+      opacity: 0.35;
+    }
+
+    .background-glow {
+      filter: blur(90px);
+      opacity: 0.2;
+    }
+
+    .hero {
+      padding: 2.4rem 0 1.4rem;
+      text-align: center;
+      position: relative;
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(circle at 50% 0%, rgba(255, 147, 115, 0.08), transparent 30%);
+    }
+
+    .game-brand {
+      font-size: 0.88rem;
+      letter-spacing: 0.24em;
+      color: #ff9966;
+      text-shadow: 0 0 18px rgba(255, 147, 103, 0.25);
+      margin-bottom: 0.8rem;
+    }
+
+    h1 {
+      font-size: clamp(3rem, 8vw, 4.8rem);
+      letter-spacing: 0.05em;
+      color: #ffb3a3;
+      text-shadow: 0 0 28px rgba(255, 152, 104, 0.28);
+      margin: 0;
+    }
+
+    .hero-subtitle {
+      color: #c4b7ab;
+      max-width: 760px;
+      margin: 1rem auto 0;
+      font-size: 1rem;
+      text-shadow: 0 0 8px rgba(0, 0, 0, 0.24);
+    }
+
+    .phase-section {
+      position: relative;
+      z-index: 2;
+      margin-top: 1.4rem;
+    }
+
+    .phase-section:has(#gameScreen:not(.hidden)) {
+      margin: 0;
+      padding: 0;
+    }
+
+    .section-heading h2 {
+      color: #f7b5a5;
+      text-shadow: 0 0 16px rgba(255, 183, 77, 0.2);
+    }
+
+    .section-heading p {
+      color: #b7ab9f;
+    }
+
+    .game-menu-grid {
+      display: grid;
+      gap: 1.15rem;
+      max-width: 760px;
+      margin: 1.5rem auto 0;
+    }
+
+    .game-card {
+      border-radius: 26px;
+      border: 1px solid rgba(208, 160, 75, 0.18);
+      padding: 1.5rem 1.4rem;
+      background: linear-gradient(180deg, rgba(16, 14, 16, 0.96), rgba(8, 7, 9, 0.96));
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04), 0 24px 52px rgba(0, 0, 0, 0.42);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .game-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(circle at top left, rgba(255, 146, 120, 0.07), transparent 18%),
+        radial-gradient(circle at bottom right, rgba(109, 234, 196, 0.05), transparent 25%);
+      pointer-events: none;
+    }
+
+    .game-card h3 {
+      margin: 0;
+      font-size: clamp(2rem, 3vw, 2.6rem);
+      letter-spacing: 0.06em;
+      color: #f7b391;
+      text-shadow: 0 0 12px rgba(247, 211, 145, 0.25);
+    }
+
+    .game-buttons {
+      display: grid;
+      gap: 0.95rem;
+      margin-top: 1.4rem;
+    }
+
+    .game-button {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem 1.1rem;
+      border-radius: 18px;
+      border: 1px solid rgba(214, 171, 100, 0.3);
+      background: rgba(29, 25, 18, 0.94);
+      color: #efe5d7;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+      text-shadow: 0 1px 1px rgba(0, 0, 0, 0.18);
+    }
+
+    .game-button:hover,
+    .game-button:focus {
+      transform: translateY(-1px);
+      background: rgba(50, 40, 25, 0.95);
+      border-color: rgba(255, 215, 135, 0.55);
+      box-shadow: 0 16px 28px rgba(0, 0, 0, 0.26);
+      outline: none;
+    }
+
+    .game-button.primary {
+      background: linear-gradient(90deg, #cc5533, #bb3311);
+      border-color: rgba(255, 134, 87, 0.35);
+      box-shadow: 0 16px 32px rgba(186, 74, 45, 0.18);
+    }
+
+    .game-button.secondary {
+      background: rgba(13, 12, 14, 0.9);
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .game-message {
+      margin-top: 1.25rem;
+      color: #d9c9b3;
+      line-height: 1.7;
+      font-size: 1rem;
+    }
+
+    .field-group {
+      display: grid;
+      gap: 0.95rem;
+      margin-top: 1rem;
+    }
+
+    .field-group label {
+      display: grid;
+      gap: 0.4rem;
+      color: #d8c7aa;
+      font-size: 0.95rem;
+    }
+
+    .field-group input {
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(12, 10, 14, 0.94);
+      color: #f0e8da;
+      padding: 0.95rem 1rem;
+      font: inherit;
+    }
+
+    .field-group input:focus {
+      outline: none;
+      border-color: rgba(255, 184, 87, 0.55);
+      box-shadow: 0 0 0 3px rgba(255, 184, 87, 0.12);
+    }
+
+    .game-screen-wrapper {
+      display: flex;
+      gap: 1rem;
+      max-width: none;
+      margin: 0;
+      padding: 1rem;
+      min-height: 100vh;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .game-screen-wrapper > * {
+      min-height: 0;
+    }
+
+    .game-leaderboard {
+      background: rgba(20, 18, 22, 0.92);
+      border-radius: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 1rem 0.8rem;
+      flex: 0 0 180px;
+      min-height: 0;
+      overflow-y: auto;
+    }
+
+    .game-board-area {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 0.8rem;
+      flex: 1;
+      min-height: 0;
+      min-width: 0;
+    }
+
+    .game-board {
+      position: relative;
+      aspect-ratio: auto;
+      width: 100%;
+      height: 100%;
+      flex: 1;
+      min-height: 0;
+      background-image: url('assets/Grass.png');
+      background-size: 80px 80px;
+      background-repeat: repeat;
+      background-color: #2a2a2a;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.75), 0 0 40px rgba(0, 0, 0, 0.35);
+      overflow: hidden;
+    }
+
+    .leaderboard-header {
+      font-size: 0.9rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #ffb3a3;
+      margin-bottom: 0.8rem;
+      text-shadow: 0 0 8px rgba(255, 150, 100, 0.2);
+    }
+
+    .leaderboard-entry {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 0.4rem;
+      align-items: center;
+      padding: 0.6rem 0.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 0.85rem;
+      color: #d9c9b3;
+    }
+
+    .leaderboard-rank {
+      font-weight: 700;
+      color: #ffb3a3;
+      min-width: 1.8rem;
+    }
+
+    .leaderboard-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .leaderboard-kills {
+      font-weight: 600;
+      color: #ffcc99;
+      min-width: 2rem;
+      text-align: right;
+    }
+
+    .game-board-area {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 0.8rem;
+      height: 100%;
+    }
+
+    .game-top-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .exit-button {
+      padding: 0.7rem 1.2rem;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(13, 12, 14, 0.9);
+      color: #f0e8da;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .exit-button:hover {
+      border-color: rgba(255, 184, 87, 0.55);
+      background: rgba(44, 34, 12, 0.9);
+    }
+
+    .wave-counter {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #ffb3a3;
+      text-align: center;
+      text-shadow: 0 0 12px rgba(255, 150, 100, 0.3);
+      min-height: 1.5rem;
+    }
+
+    .player-stats {
+      font-size: 0.9rem;
+      color: #d9c9b3;
+      text-align: right;
+    }
+
+    #gameScreen {
+      display: grid !important;
+      max-width: none !important;
+      width: 100% !important;
+      height: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: none !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      gap: 0 !important;
+    }
+
+    #gameScreen.hidden {
+      display: none !important;
+    }
+
+    #gameScreen:not(.hidden) {
+      display: grid;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 9999;
+    }
+
+    #gameScreen:not(.hidden) .game-screen-wrapper {
+      display: flex;
+      height: 100vh;
+    }
+
+    .game-board {
+      position: relative;
+      aspect-ratio: auto;
+      width: 100%;
+      height: 100%;
+      flex: 1;
+      min-height: 0;
+      background-image: url('assets/Grass.png');
+      background-size: 80px 80px;
+      background-repeat: repeat;
+      background-color: #2a2a2a;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.75), 0 0 40px rgba(0, 0, 0, 0.35);
+      overflow: hidden;
+    }
+
+    .game-entity {
+      position: absolute;
+      pointer-events: none;
+    }
+
+    .player-avatar {
+      width: 64px;
+      height: 80px;
+      background-image: url('assets/Monafuku-Sprite.png');
+      background-repeat: no-repeat;
+      background-size: 256px 320px;
+      background-color: transparent;
+      background-position: 0 0;
+      border: none;
+      box-shadow: none;
+      image-rendering: pixelated;
+    }
+
+    .enemy-sprite {
+      width: 84px;
+      height: 70px;
+      background-image: url('assets/Soilder.png');
+      background-repeat: no-repeat;
+      background-size: 612px 408px;
+      background-color: transparent;
+      border: none;
+      box-shadow: none;
+      image-rendering: pixelated;
+    }
+
+    .boss-sprite {
+      width: 95px;
+      height: 63px;
+      background: transparent;
+      border: none;
+      box-shadow: none;
+      position: absolute;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      transform-origin: center center;
+      will-change: left, top;
+      mix-blend-mode: normal;
+      filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45));
+      opacity: 1;
+    }
+
+    .boss-sprite-canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .bullet {
+      width: 24px;
+      height: 16px;
+      border-radius: 1px;
+      background-image: url('assets/Bullet.png');
+      background-repeat: no-repeat;
+      background-size: 96px 80px;
+      background-position: 0 0;
+      image-rendering: pixelated;
+    }
+
+    .seed-bullet {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #ff4444;
+      box-shadow: 0 0 4px rgba(255, 68, 68, 0.9);
+    }
+
+    .entity-health-bar {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 40px;
+      height: 4px;
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .entity-health-fill {
+      height: 100%;
+      background: #ff4444;
+      transition: width 0.1s ease;
+    }
+    .player-avatar .entity-health-fill {
+      background: #44ff44;
+    }
+    .boss-sprite .entity-health-bar {
+      width: 60px;
+      height: 6px;
+      top: -18px;
+    }
+    .player-ammo-mini {
+      position: absolute;
+      top: -6px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 10px;
+      font-weight: bold;
+      color: #ffcc00;
+      text-shadow: 0 1px 2px #000;
+    }
+
+    .pickup-item {
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      animation: pulse 1s ease-in-out infinite;
+    }
+
+    .pickup-ammo {
+      background: linear-gradient(135deg, #ffaa55, #ff8833);
+    }
+
+    .pickup-medkit {
+      background: linear-gradient(135deg, #ff5588, #ff3366);
+    }
+
+    .pickup-flamethrower {
+      background: linear-gradient(135deg, #ffff00, #ffcc00);
+    }
+
+    .pickup-machinegun {
+      background: linear-gradient(135deg, #666666, #444444);
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
+    .game-bottom-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.8rem 1rem;
+      background: rgba(20, 18, 22, 0.92);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 0.9rem;
+      color: #d9c9b3;
+    }
+
+    .player-health {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .health-bar {
+      width: 120px;
+      height: 8px;
+      background: rgba(100, 100, 100, 0.4);
+      border-radius: 4px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .health-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #ff5555, #ff9955);
+      transition: width 0.3s ease;
+      width: 100%;
+    }
+
+    .player-ammo {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .player-weapon {
+      font-weight: 600;
+      color: #ffcc99;
+    }
+
+    .game-end-screen {
+      display: grid;
+      gap: 1.5rem;
+      max-width: 600px;
+      margin: 3rem auto;
+      padding: 2rem;
+      background: rgba(20, 18, 22, 0.95);
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      text-align: center;
+    }
+
+    .end-game-title {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #ffb3a3;
+      text-shadow: 0 0 16px rgba(255, 150, 100, 0.3);
+    }
+
+    .end-game-podium {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+
+    .podium-entry {
+      padding: 1rem;
+      background: rgba(30, 28, 32, 0.8);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .podium-rank {
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: #ffcc99;
+      margin-bottom: 0.3rem;
+    }
+
+    .podium-name {
+      font-weight: 700;
+      color: #f0e8da;
+      margin-bottom: 0.2rem;
+    }
+
+    .podium-kills {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #ffb3a3;
+    }
+
+    .end-game-timer {
+      font-size: 1rem;
+      color: #d9c9b3;
+      margin-top: 1rem;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    body:has(#gameScreen:not(.hidden)) {
+      overflow: hidden;
+    }
+
+    body:has(#gameScreen:not(.hidden)) > header,
+    body:has(#gameScreen:not(.hidden)) > footer {
+      display: none;
+    }
+
+    .footer {
+      color: #9f8f7b;
+      border-color: rgba(255, 206, 135, 0.12);
+    }
+
+    @media (max-width: 1024px) {
+      .game-screen-wrapper {
+        grid-template-columns: 1fr;
+        height: auto;
+      }
+      .game-leaderboard {
+        height: 150px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="background-glow bg-1"></div>
+  <div class="background-glow bg-2"></div>
+  <div class="background-grid"></div>
+
+  <header class="container hero">
+    <p class="game-brand">GUNS &amp; ROSES</p>
+    <h1>COMBAT ARENA</h1>
+    <p class="hero-subtitle">
+      Join the battlefield with allies, survive waves of enemies, and prove yourself as the ultimate warrior.
+    </p>
+  </header>
+
+  <main class="container">
+    <section class="phase-section">
+      <div class="section-heading">
+        <h2>Launch Menu</h2>
+        <p>Select play mode or manage your session. Solo play starts immediately after character selection.</p>
+      </div>
+
+      <!-- MENU SCREEN -->
+      <div id="menuScreen" class="game-menu-grid game-card">
+        <h3>Main Menu</h3>
+        <div class="game-buttons">
+          <button class="game-button primary" data-action="play">Play</button>
+          <button class="game-button secondary" data-action="create-room">Create Room</button>
+          <button class="game-button secondary" data-action="enter-room">Enter Room</button>
+          <button class="game-button secondary" data-action="quit">Quit</button>
+        </div>
+        <p class="game-message">Solo or multiplayer arena battles. Only Monafuku is playable in this beta.</p>
+      </div>
+
+      <!-- PLAY MENU -->
+      <div id="playMenu" class="game-menu-grid game-card hidden">
+        <h3>Play Options</h3>
+        <div class="game-buttons">
+          <button class="game-button primary" data-action="play-solo">Play Solo</button>
+          <button class="game-button primary" data-action="play-multiplayer">Play Multiplayer</button>
+          <button class="game-button secondary" data-action="back-to-menu">Back</button>
+          <button class="game-button secondary" data-action="quit">Quit</button>
+        </div>
+        <p class="game-message">Solo mode: fight alone against 10 waves. Multiplayer: join a room and battle together.</p>
+      </div>
+
+      <!-- CREATE ROOM SCREEN -->
+      <div id="createRoomScreen" class="game-menu-grid game-card hidden">
+        <h3>Create Arena</h3>
+        <div class="field-group">
+          <label>Arena ID
+            <input id="createRoomName" type="text" placeholder="Enter arena name or leave empty" />
+          </label>
+          <label>Arena Password
+            <input id="createRoomPassword" type="text" placeholder="Enter password or leave empty" />
+          </label>
+        </div>
+        <div class="game-buttons">
+          <button class="game-button primary" data-action="submit-create-room">Create Arena</button>
+          <button class="game-button secondary" data-action="back-to-menu">Back</button>
+        </div>
+        <p class="game-message">Share arena ID with friends. Password keeps it private.</p>
+      </div>
+
+      <!-- ENTER ROOM SCREEN -->
+      <div id="enterRoomScreen" class="game-menu-grid game-card hidden">
+        <h3>Join Arena</h3>
+        <div class="field-group">
+          <label>Arena ID
+            <input id="enterRoomName" type="text" placeholder="Enter arena name" />
+          </label>
+          <label>Arena Password
+            <input id="enterRoomPassword" type="text" placeholder="Enter arena password" />
+          </label>
+        </div>
+        <div class="game-buttons">
+          <button class="game-button primary" data-action="submit-enter-room">Join Arena</button>
+          <button class="game-button secondary" data-action="back-to-menu">Back</button>
+        </div>
+        <p class="game-message">Join an existing arena room to battle with other players.</p>
+      </div>
+
+      <!-- WAITING ROOM SCREEN -->
+      <div id="waitingRoomScreen" class="game-menu-grid game-card hidden">
+        <h3>Waiting Room</h3>
+        <p class="game-message" id="waitingRoomStatus">Waiting for game to start...</p>
+        <div class="session-details">
+          <p><strong>Arena ID:</strong> <span id="waitingArenaId">—</span></p>
+          <p><strong>Players:</strong> <span id="waitingPlayerCount">—</span></p>
+          <p><strong>Your Name:</strong> <span id="waitingPlayerName">—</span></p>
+          <p><strong>Status:</strong> <span id="waitingGameStatus">Waiting...</span></p>
+        </div>
+        <div id="widgetDock"></div>
+        <div class="game-buttons">
+          <button class="game-button secondary" data-action="back-to-menu">Back</button>
+          <button class="game-button secondary" data-action="quit">Quit</button>
+        </div>
+      </div>
+
+      <!-- GAME SCREEN -->
+      <div id="gameScreen" class="game-menu-grid game-card hidden">
+        <h3>Combat Arena</h3>
+        <div class="game-screen-wrapper">
+          <div class="game-leaderboard" id="gameleaderboard">
+            <div class="leaderboard-header">Leaderboard</div>
+            <div id="leaderboardList"></div>
+          </div>
+          <div class="game-board-area">
+            <div class="game-top-controls">
+              <button class="exit-button" data-action="exit-game">Exit</button>
+              <div class="wave-counter" id="waveCounter"></div>
+              <div class="player-stats" id="playerStats"></div>
+            </div>
+            <div class="game-board" id="gameBoard"></div>
+            <div class="game-bottom-info">
+              <div class="player-health">
+                <span>HP:</span>
+                <div class="health-bar">
+                  <div class="health-fill" id="healthFill"></div>
+                </div>
+                <span id="healthText">10/10</span>
+              </div>
+              <div class="player-weapon" id="weaponDisplay">Pistol</div>
+              <div class="player-ammo">
+                <span id="ammoDisplay">20</span> <span id="ammoType">Ammo</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- END GAME SCREEN -->
+      <div id="endGameScreen" class="game-menu-grid game-card hidden">
+        <div class="game-end-screen">
+          <div class="end-game-title">Wave Survived!</div>
+          <div class="end-game-podium" id="podiumList"></div>
+          <div class="end-game-timer" id="endGameTimer"></div>
+          <div class="game-buttons">
+            <button class="game-button primary" data-action="back-to-menu">Back to Menu</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="container footer">
+    <p>(c) 2026 Love Idol Agency. Guns & Roses arena combat preview.</p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@multisynq/client@latest/bundled/multisynq-client.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

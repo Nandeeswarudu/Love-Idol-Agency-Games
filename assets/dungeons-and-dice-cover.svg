@@ -1,0 +1,32 @@
+<svg width="640" height="800" viewBox="0 0 640 800" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title>Dungeons & Dice cover art</title>
+  <desc>Ornate dice and dungeon iconography on a dark fantasy board</desc>
+  <defs>
+    <linearGradient id="glow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f8b744" />
+      <stop offset="100%" stop-color="#db507b" />
+    </linearGradient>
+    <linearGradient id="board" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2a2430" />
+      <stop offset="100%" stop-color="#14111b" />
+    </linearGradient>
+  </defs>
+  <rect width="640" height="800" rx="40" fill="#0c1017" />
+  <rect x="32" y="32" width="576" height="736" rx="32" fill="url(#board)" stroke="rgba(255,255,255,0.08)" stroke-width="4" />
+  <g transform="translate(120 120)">
+    <rect width="400" height="400" rx="32" fill="#181420" stroke="url(#glow)" stroke-width="6" />
+    <path d="M200 40 L240 200 L160 200 Z" fill="#f7e2a5" opacity="0.95" />
+    <circle cx="200" cy="280" r="88" fill="#29233c" stroke="#c9a76b" stroke-width="10" />
+    <path d="M200 200 L200 360 M120 280 L280 280" stroke="#f8b744" stroke-width="10" stroke-linecap="round" />
+    <text x="200" y="480" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="52" fill="#f8b744">DUNGEONS</text>
+    <text x="200" y="540" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="48" fill="#ffffff">&amp; DICE</text>
+  </g>
+  <g fill="#ececec" opacity="0.92">
+    <circle cx="136" cy="592" r="34" />
+    <circle cx="504" cy="656" r="28" />
+    <circle cx="176" cy="696" r="20" />
+    <circle cx="450" cy="520" r="18" />
+  </g>
+  <path d="M150 236 L230 190 L310 236 L310 396 L230 440 L150 396 Z" fill="none" stroke="#7eb7ff" stroke-width="6" />
+  <path d="M390 236 L470 190 L550 236 L550 396 L470 440 L390 396 Z" fill="none" stroke="#ff8aa3" stroke-width="6" />
+</svg>

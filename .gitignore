@@ -1,0 +1,5 @@
+# Ignore games that are still in development to keep the repository clean
+games/dungeons-and-dice/
+
+# Ignore OS generated files
+.DS_Store
