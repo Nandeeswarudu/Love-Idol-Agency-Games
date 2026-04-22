@@ -41,7 +41,7 @@ const GAME_CONFIG = {
   INITIAL_ENEMIES: 15,
   ENEMIES_PER_WAVE: 5,
   INITIAL_BOSS_HP: 20,
-  BOSS_HP_INCREMENT: 5,
+  BOSS_HP_INCREMENT: 10,
   PLAYER_START_HP: 50,
   PLAYER_START_AMMO: 20,
   HP_REGEN_INTERVAL: 10000,
@@ -526,6 +526,7 @@ function spawnBoss() {
     y: gameBoard.clientHeight / 2,
     hp: bossHp,
     maxHp: bossHp,
+    wave: gameState.wave,
     spawnTime: Date.now(),
     bloomed: false,
     nextShootTime: Date.now() + GAME_CONFIG.ENEMY_SHOOT_INTERVAL,
@@ -579,8 +580,12 @@ function updateGameDisplay() {
     const el = document.createElement("div");
     el.className = "game-entity boss-sprite";
     const bossPos = getBossSpritePosition(gameState.boss);
-    const renderWidth = Math.max(1, Math.round(bossPos.width * BOSS_SPRITE_CONFIG.DISPLAY_SCALE));
-    const renderHeight = Math.max(1, Math.round(bossPos.height * BOSS_SPRITE_CONFIG.DISPLAY_SCALE));
+    // Grow boss by 8% per wave beyond wave 1, capped at 2x base size
+    const bossWave = gameState.boss.wave || gameState.wave || 1;
+    const bossGrowth = Math.min(1 + (bossWave - 1) * 0.08, 2.0);
+    const bossScale = BOSS_SPRITE_CONFIG.DISPLAY_SCALE * bossGrowth;
+    const renderWidth = Math.max(1, Math.round(bossPos.width * bossScale));
+    const renderHeight = Math.max(1, Math.round(bossPos.height * bossScale));
     el.style.width = `${renderWidth}px`;
     el.style.height = `${renderHeight}px`;
     el.style.left = `${Math.round(clamp(gameState.boss.x - renderWidth / 2, 0, rect.width - renderWidth))}px`;
