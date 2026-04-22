@@ -57,6 +57,7 @@ const DEBUG_BOSS_FIRST = false;
 let gameMode = "solo";
 let currentSession = null;
 let localPlayerId = `player-${Math.random().toString(36).slice(2, 8)}`;
+let lastFrameTime = 0;
 let gameState = null;
 
 const keysPressed = {
@@ -71,13 +72,13 @@ const keysPressed = {
 };
 
 const MOVEMENT_CONFIG = {
-  SPEED: 4,
+  SPEED: 2,
   DIAGONAL_REDUCTION: 0.7,
 };
 
 const AI_CONFIG = {
-  ENEMY_MOVE_SPEED: 1,
-  BOSS_MOVE_SPEED: 1.1,
+  ENEMY_MOVE_SPEED: 0.5,
+  BOSS_MOVE_SPEED: 0.7,
   BOSS_CHASE_STOP_RANGE: 40,
   BOSS_MELEE_RANGE: 70,
   BOSS_MELEE_COOLDOWN: 1100,
@@ -105,6 +106,7 @@ let playerData = {
   lastMoveTime: Date.now(),
   lastShootTime: 0,
   lastHurtTime: 0,
+  lastSpriteUpdate: 0,
   facing: 1,
 };
 
@@ -134,7 +136,7 @@ const SPRITE_CONFIG = {
   SHEET_HEIGHT: 320,
   COLS: 4,
   ROWS: 4,
-  FRAME_RATE: 100,
+  FRAME_RATE: 150,
   SPRITE_ROWS: {
     walk: 0,
     jump: 1,
@@ -697,7 +699,7 @@ function fireProjectile(fromX, fromY, toX, toY, fromPlayer) {
   const dx = toX - fromX;
   const dy = toY - fromY;
   const dist = Math.sqrt(dx * dx + dy * dy);
-  const speed = 10;
+  const speed = 6;
 
   const angle = Math.atan2(dy, dx);
 
@@ -715,35 +717,39 @@ function fireProjectile(fromX, fromY, toX, toY, fromPlayer) {
   });
 }
 
-function updatePlayerMovement() {
+function updatePlayerMovement(dt) {
   if (!playerData.alive || !gameState || !gameState.gameActive) return;
 
   const rect = gameBoard.getBoundingClientRect();
   let moveX = 0;
   let moveY = 0;
   let moved = false;
-
-  const keysActive = [keysPressed.w, keysPressed.a, keysPressed.s, keysPressed.d, 
-                      keysPressed.arrowup, keysPressed.arrowdown, keysPressed.arrowleft, keysPressed.arrowright];
   
-  if (keysPressed.w || keysPressed.arrowup) { moveY -= MOVEMENT_CONFIG.SPEED; moved = true; }
-  if (keysPressed.s || keysPressed.arrowdown) { moveY += MOVEMENT_CONFIG.SPEED; moved = true; }
-  if (keysPressed.a || keysPressed.arrowleft) { moveX -= MOVEMENT_CONFIG.SPEED; moved = true; }
-  if (keysPressed.d || keysPressed.arrowright) { moveX += MOVEMENT_CONFIG.SPEED; moved = true; }
+  // Normalize speed to 60fps (dt will be ~1.0 at 60fps)
+  const adjustedSpeed = MOVEMENT_CONFIG.SPEED * dt;
+
+  if (keysPressed.w || keysPressed.arrowup) { moveY -= adjustedSpeed; moved = true; }
+  if (keysPressed.s || keysPressed.arrowdown) { moveY += adjustedSpeed; moved = true; }
+  if (keysPressed.a || keysPressed.arrowleft) { moveX -= adjustedSpeed; moved = true; }
+  if (keysPressed.d || keysPressed.arrowright) { moveX += adjustedSpeed; moved = true; }
 
   if (moved) {
+    if (moveX !== 0 && moveY !== 0) {
+      moveX *= MOVEMENT_CONFIG.DIAGONAL_REDUCTION;
+      moveY *= MOVEMENT_CONFIG.DIAGONAL_REDUCTION;
+    }
     playerData.x = clamp(playerData.x + moveX, SPRITE_CONFIG.FRAME_WIDTH / 2, rect.width - SPRITE_CONFIG.FRAME_WIDTH / 2);
     playerData.y = clamp(playerData.y + moveY, SPRITE_CONFIG.FRAME_HEIGHT / 2, rect.height - SPRITE_CONFIG.FRAME_HEIGHT / 2);
     playerData.lastMoveTime = Date.now();
   }
 }
 
-function updateGameLogic() {
+function updateGameLogic(dt) {
   if (!gameState || !gameState.gameActive) return;
 
   const now = Date.now();
 
-  updatePlayerMovement();
+  updatePlayerMovement(dt);
   syncLocalPlayerToGameState();
 
   if (playerData.alive && playerData.hp > 0) {
@@ -751,15 +757,23 @@ function updateGameLogic() {
     const timeSinceShoot = now - playerData.lastShootTime || Infinity;
     const timeIdleSinceMove = now - playerData.lastMoveTime;
     
+    const canUpdateFrame = now - playerData.lastSpriteUpdate > SPRITE_CONFIG.FRAME_RATE;
+
     if (playerData.hp < playerData.maxHp && timeSinceHurt < 500) {
       playerData.spriteAnimationRow = SPRITE_CONFIG.SPRITE_ROWS.hurt;
-      playerData.spriteAnimationFrame = (playerData.spriteAnimationFrame + 1) % 4;
+      if (canUpdateFrame) {
+        playerData.spriteAnimationFrame = (playerData.spriteAnimationFrame + 1) % 4;
+        playerData.lastSpriteUpdate = now;
+      }
     } else if (timeSinceShoot < 300) {
       playerData.spriteAnimationRow = SPRITE_CONFIG.SPRITE_ROWS.shoot;
       playerData.spriteAnimationFrame = 2;
     } else if (timeIdleSinceMove < 300) {
       playerData.spriteAnimationRow = SPRITE_CONFIG.SPRITE_ROWS.walk;
-      playerData.spriteAnimationFrame = (playerData.spriteAnimationFrame + 1) % 4;
+      if (canUpdateFrame) {
+        playerData.spriteAnimationFrame = (playerData.spriteAnimationFrame + 1) % 4;
+        playerData.lastSpriteUpdate = now;
+      }
     } else {
       playerData.spriteAnimationRow = SPRITE_CONFIG.SPRITE_ROWS.walk;
       playerData.spriteAnimationFrame = 0;
@@ -815,8 +829,8 @@ function updateGameLogic() {
       const speed = AI_CONFIG.ENEMY_MOVE_SPEED;
 
       if (dist > 5) {
-        enemy.x += (dx / dist) * speed;
-        enemy.y += (dy / dist) * speed;
+        enemy.x += (dx / dist) * speed * dt;
+        enemy.y += (dy / dist) * speed * dt;
       }
 
       if (enemy.bloomed && now >= enemy.nextShootTime) {
@@ -923,8 +937,8 @@ function updateGameLogic() {
 
           if (boss.state !== "attack" && dist > AI_CONFIG.BOSS_CHASE_STOP_RANGE) {
             const speed = AI_CONFIG.BOSS_MOVE_SPEED;
-            boss.x += (dx / dist) * speed;
-            boss.y += (dy / dist) * speed;
+            boss.x += (dx / dist) * speed * dt;
+            boss.y += (dy / dist) * speed * dt;
           }
 
           if (boss.state !== "attack" && now >= boss.nextShootTime) {
@@ -954,8 +968,8 @@ function updateGameLogic() {
   }
 
   gameState.projectiles = gameState.projectiles.filter((proj) => {
-    proj.x += proj.vx;
-    proj.y += proj.vy;
+    proj.x += proj.vx * dt;
+    proj.y += proj.vy * dt;
 
     const inBounds = proj.x >= 0 && proj.x <= gameBoard.clientWidth && proj.y >= 0 && proj.y <= gameBoard.clientHeight;
 
@@ -1082,8 +1096,19 @@ function showEndGameScreen() {
   showScreen("endGame");
 }
 
-function gameLoop() {
-  updateGameLogic();
+function gameLoop(timestamp) {
+  // Handle first frame where timestamp is undefined
+  if (!timestamp) {
+    requestAnimationFrame(gameLoop);
+    return;
+  }
+
+  if (!lastFrameTime) lastFrameTime = timestamp;
+  // Calculate dt relative to 60fps (16.66ms per frame)
+  const dt = Math.min(6, (timestamp - lastFrameTime) / 16.66);
+  lastFrameTime = timestamp;
+
+  updateGameLogic(dt);
   updateGameDisplay();
 
   if (gameState && gameState.gameActive) {
@@ -1097,6 +1122,7 @@ function startSoloGame() {
 
   leaderboardPlayers = [playerData];
 
+  lastFrameTime = 0;
   showScreen("game");
   initializeGameState();
   gameLoop();
